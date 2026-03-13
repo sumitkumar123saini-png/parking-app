@@ -358,6 +358,24 @@ def delete_lot(lot_id):
     return redirect(url_for('admin'))
 
 
+@app.route('/admin/lot/<int:lot_id>/spot/<int:spot_id>')
+@admin_required
+def spot_details(lot_id, spot_id):
+    """Show details for a specific parking spot in a lot."""
+    lot = Lot.query.get(lot_id)
+    if not lot:
+        flash("Lot not found", "error")
+        return redirect(url_for('admin'))
+
+    spot = Spot.query.get(spot_id)
+    if not spot or spot.lot_id != lot_id:
+        flash("Spot not found", "error")
+        return redirect(url_for('admin'))
+
+    reservation = Reserve.query.filter_by(spot_id=spot_id, is_ongoing=True).first()
+    return render_template("admin/spot_details.html", spot=spot, reservation=reservation)
+
+
 @app.route('/summary')
 @auth_required
 def view_summary():
