@@ -49,6 +49,7 @@ class Lot(db.Model):
     price_per_hr = db.Column(db.Float, nullable=False)
     max_spots = db.Column(db.Integer, nullable=False)
     is_shaded = db.Column(db.Boolean, default=False)
+    spots = db.relationship('Spot', backref='lot', lazy=True, cascade='all, delete-orphan')
 
 class Spot(db.Model):
     __tablename__ = 'spot'
@@ -114,7 +115,14 @@ def home():
         return redirect(url_for('admin'))
     
     lots = Lot.query.all()
+    # Load spots for each lot
+    for lot in lots:
+        lot.spots = Spot.query.filter_by(lot_id=lot.lot_id).all()
+    
     current = Reserve.query.filter_by(user_id=user.user_id, is_ongoing=True).all()
+    # Fix the template reference - add r_id alias
+    for record in current:
+        record.r_id = record.reserve_id
     return render_template("user/user_dashboard.html", lots=lots, current=current)
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -378,6 +386,148 @@ def transaction_history():
         .all()
     )
     return render_template("user/transaction_history.html", transactions=transactions)
+
+@app.route('/lot/<int:lot_id>/book', methods=['GET', 'POST'])
+@auth_required
+def book_lot(lot_id):
+    """Book a parking spot in a lot"""
+    lot = Lot.query.get(lot_id)
+    if not lot:
+        flash("Lot not found", "error")
+        return redirect(url_for('home'))
+    
+    user = User.query.get(session['user_id'])
+    
+    if request.method == 'POST':
+        vehicle_num = request.form.get('vno')
+        spot_id = request.form.get('spot_id')
+        
+        if not vehicle_num:
+            flash("Please enter vehicle number", "warning")
+            return redirect(url_for('book_lot', lot_id=lot_id))
+        
+        # If spot_id not provided, use first available
+        if not spot_id:
+            available_spots = Spot.query.filter_by(lot_id=lot_id, status='a').all()
+            if not available_spots:
+                flash("No spots available", "error")
+                return redirect(url_for('home'))
+            spot_id = available_spots[0].spot_id
+        
+        spot = Spot.query.get(spot_id)
+        if not spot or spot.lot_id != lot_id:
+            flash("Invalid spot", "error")
+            return redirect(url_for('book_lot', lot_id=lot_id))
+        
+        if spot.status != 'a':
+            flash("Spot is already occupied", "error")
+            return redirect(url_for('book_lot', lot_id=lot_id))
+        
+        # Create reservation
+        reservation = Reserve(
+            user_id=user.user_id,
+            lot_id=lot_id,
+            spot_id=spot.spot_id,
+            price_per_hr=lot.price_per_hr,
+            vehicle_num=vehicle_num,
+            is_ongoing=True
+        )
+        spot.status = 'o'  # occupied
+        db.session.add(reservation)
+        db.session.commit()
+        
+        flash("Spot booked successfully!", "success")
+        return redirect(url_for('home'))
+    
+    # GET request - show available spots
+    available_spots = Spot.query.filter_by(lot_id=lot_id, status='a').all()
+    if not available_spots:
+        flash("No spots available in this lot", "warning")
+        return redirect(url_for('home'))
+    
+    # Use first available spot for booking
+    spot = available_spots[0]
+    return render_template("user/book_spot.html", lot=lot, spot=spot, user=user)
+
+@app.route('/lot/<int:lot_id>/spot/<int:spot_id>/release', methods=['GET', 'POST'])
+@auth_required
+def release_spot(lot_id, spot_id):
+    """Release a parking spot and process payment"""
+    user = User.query.get(session['user_id'])
+    reservation = Reserve.query.filter_by(
+        user_id=user.user_id,
+        lot_id=lot_id,
+        spot_id=spot_id,
+        is_ongoing=True
+    ).first()
+    
+    if not reservation:
+        flash("Reservation not found", "error")
+        return redirect(url_for('home'))
+    
+    if request.method == 'POST':
+        # Calculate time difference and cost
+        end_time = datetime.now()
+        time_diff = end_time - reservation.start_time
+        hours = max(1, int(time_diff.total_seconds() / 3600) + (1 if time_diff.total_seconds() % 3600 > 0 else 0))
+        total_cost = hours * reservation.price_per_hr
+        
+        # Update reservation
+        reservation.end_time = end_time
+        reservation.is_ongoing = False
+        
+        # Free up the spot
+        spot = Spot.query.get(spot_id)
+        if spot:
+            spot.status = 'a'  # available
+        
+        db.session.commit()
+        
+        # Create payment record
+        payment = Payment(
+            reserve_id=reservation.reserve_id,
+            total_amt=total_cost,
+            transaction_date=end_time
+        )
+        db.session.add(payment)
+        db.session.commit()
+        
+        flash(f"Spot released! Total cost: ₹{total_cost}", "success")
+        return redirect(url_for('payment', payment_id=payment.payment_id))
+    
+    # GET request - show release form
+    time_now = datetime.now()
+    time_diff = time_now - reservation.start_time
+    hours = max(1, int(time_diff.total_seconds() / 3600) + (1 if time_diff.total_seconds() % 3600 > 0 else 0))
+    cost = hours * reservation.price_per_hr
+    
+    return render_template("user/release_spot.html", reservation=reservation, time_now=time_now, cost=cost)
+
+@app.route('/payment/<int:payment_id>', methods=['GET', 'POST'])
+@auth_required
+def payment(payment_id):
+    """Process payment for a reservation"""
+    payment_record = Payment.query.get(payment_id)
+    if not payment_record:
+        flash("Payment not found", "error")
+        return redirect(url_for('home'))
+    
+    reservation = Reserve.query.get(payment_record.reserve_id)
+    if not reservation or reservation.user_id != session['user_id']:
+        flash("Unauthorized access", "error")
+        return redirect(url_for('home'))
+    
+    if request.method == 'POST':
+        payment_method = request.form.get('method')
+        if payment_method:
+            payment_record.payment_method = payment_method
+            db.session.commit()
+            flash("Payment successful!", "success")
+            return redirect(url_for('home'))
+        else:
+            flash("Please select a payment method", "warning")
+    
+    return render_template("user/payment.html", payment=payment_record, reservation=reservation)
 
 
 # Initialize database

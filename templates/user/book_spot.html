@@ -4,6 +4,7 @@
 <div class="container my-5 my-container">
 <h1 class="display-6 my-display my-4">Book Parking Spot</h1>
 <form class="row g-3" method="POST">
+  <input type="hidden" name="spot_id" value="{{spot.spot_id}}">
   <div class="col-12">
     <label for="spot_id" class="form-label my-label">Spot ID</label>
     <input type="text" class="form-control my-input" id="spot_id" value="{{spot.spot_id}}" readonly>
