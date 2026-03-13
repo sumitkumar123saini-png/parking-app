@@ -349,6 +349,37 @@ def delete_lot(lot_id):
         flash("Lot not found", "error")
     return redirect(url_for('admin'))
 
+
+@app.route('/summary')
+@auth_required
+def view_summary():
+    """Show all parking reservations for the logged‑in user."""
+    if 'user_id' not in session:
+        flash("Please login first", "warning")
+        return redirect(url_for('login'))
+
+    history = Reserve.query.filter_by(user_id=session['user_id']).order_by(Reserve.start_time).all()
+    return render_template("user/user_summary.html", history=history)
+
+
+@app.route('/transactions')
+@auth_required
+def transaction_history():
+    """Show all payments for the logged‑in user."""
+    if 'user_id' not in session:
+        flash("Please login first", "warning")
+        return redirect(url_for('login'))
+
+    transactions = (
+        db.session.query(Payment)
+        .join(Reserve, Payment.reserve_id == Reserve.reserve_id)
+        .filter(Reserve.user_id == session['user_id'])
+        .order_by(Payment.transaction_date)
+        .all()
+    )
+    return render_template("user/transaction_history.html", transactions=transactions)
+
+
 # Initialize database
 with app.app_context():
     db.create_all()
@@ -359,6 +390,32 @@ with app.app_context():
         admin = User(email='admin@lotandfound.com', password=passhash, name='Admin', is_admin=True)
         db.session.add(admin)
         db.session.commit()
+
+    # Ensure there is at least one non‑admin user for "no auth" mode
+    normal_user = User.query.filter_by(is_admin=False).first()
+    if not normal_user:
+        guest_passhash = generate_password_hash('guest')
+        guest = User(
+            email='guest@lotandfound.com',
+            password=guest_passhash,
+            name='Guest User',
+            is_admin=False,
+        )
+        db.session.add(guest)
+        db.session.commit()
+
+
+@app.before_request
+def auto_login_guest():
+    """
+    Disable manual auth by automatically logging every visitor in
+    as the first non‑admin user. This removes the need for login/sign‑up.
+    """
+    if 'user_id' not in session:
+        user = User.query.filter_by(is_admin=False).first()
+        if user:
+            session['user_id'] = user.user_id
+
 
 if __name__ == "__main__":
     # Production vs Development configuration
