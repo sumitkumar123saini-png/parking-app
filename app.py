@@ -391,31 +391,6 @@ with app.app_context():
         db.session.add(admin)
         db.session.commit()
 
-    # Ensure there is at least one non‑admin user for "no auth" mode
-    normal_user = User.query.filter_by(is_admin=False).first()
-    if not normal_user:
-        guest_passhash = generate_password_hash('guest')
-        guest = User(
-            email='guest@lotandfound.com',
-            password=guest_passhash,
-            name='Guest User',
-            is_admin=False,
-        )
-        db.session.add(guest)
-        db.session.commit()
-
-
-@app.before_request
-def auto_login_guest():
-    """
-    Disable manual auth by automatically logging every visitor in
-    as the first non‑admin user. This removes the need for login/sign‑up.
-    """
-    if 'user_id' not in session:
-        user = User.query.filter_by(is_admin=False).first()
-        if user:
-            session['user_id'] = user.user_id
-
 
 if __name__ == "__main__":
     # Production vs Development configuration
