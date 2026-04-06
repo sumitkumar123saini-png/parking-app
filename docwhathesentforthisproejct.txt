@@ -1,0 +1,488 @@
+Smart Parking System  |  Highway Engineering Project                                                      
+HIGHWAY ENGINEERING PROJECT 
+SMART PARKING SYSTEM 
+Arduino-Based Prototype with AI Integration Concept 
+Subject 
+Highway Engineering 
+System 
+Arduino Uno + Ultrasonic Sensor + 
+LEDs 
+Scale Model 
+Ground Floor Parking Layout (8 Slots) 
+Concept 
+AI-Integrated Smart Parking 
+(Conceptual) 
+Year 
+2025 - 
+Submitted by  
+Sachin Ramesh (P24606002) - - 
+Yug Shah (P24606011) 
+Pratyush Rai (P24606013) - - 
+Rithishram N (P24606015) - 
+Gayathri A (P24606018) 
+Ujwal Rajput (P24606034) 
+1 | Page 
+Smart Parking System  |  Highway Engineering Project                                                      
+1. Problem Statement 
+Urbanisation across India and the world has led to an unprecedented rise in personal vehicle 
+ownership. As cities expand and populations grow, traditional parking infrastructure has become 
+grossly inadequate. The absence of an intelligent parking management system leads to a wide 
+array of problems that affect commuters, city planners, and the environment alike. 
+1.1  Key Real-World Challenges 
+• Traffic congestion due to vehicles circulating in search of available parking spaces 
+contributes significantly to urban gridlock, wasting fuel and increasing travel times. 
+• Inefficient land use results when large areas are dedicated to surface parking lots without 
+any data-driven management, leading to both under-utilisation and overflow. 
+• Increased fuel consumption and carbon emissions are direct consequences of drivers 
+spending an average of 10 to 15 minutes searching for parking in busy urban areas. 
+• Absence of real-time information prevents drivers from knowing in advance whether a 
+parking space is available, forcing them to travel to the location and search manually. 
+• Manual parking management relies on attendants and physical checks, which is labour
+intensive, error-prone, and not scalable for large facilities. 
+• Revenue loss for parking authorities occurs due to improper management, ticket fraud, 
+and inability to monitor occupancy accurately. 
+Scale of the Problem 
+Studies indicate that 30% of urban traffic congestion is caused by drivers searching for parking. A 
+smart, sensor-based parking system directly addresses this by providing real-time slot availability, 
+reducing search time, and improving overall traffic flow. 
+This project proposes an Arduino-based Smart Parking System that uses ultrasonic sensors and 
+LED indicators to provide real-time occupancy information. The system conceptually integrates 
+Artificial Intelligence through computer vision to further automate entry, exit, and vehicle detection, 
+offering a scalable solution for modern parking facilities. 
+2 | Page 
+Smart Parking System  |  Highway Engineering Project                                                      
+2. Objectives of the Project 
+The following objectives define the scope and purpose of this Smart Parking System project: 
+1. To design and fabricate a scaled physical model of a ground-floor parking layout 
+incorporating a minimum of eight parking slots, a driving aisle, entry and exit gates, 
+structural columns, and a ramp connection. 
+2. To implement a working electronic prototype using Arduino Uno, ultrasonic distance 
+sensors (HC-SR04), and LED indicators to detect vehicle presence in real time and 
+display slot occupancy status. 
+3. To demonstrate the working principle of sensor-based vehicle detection, where a Red LED 
+indicates an occupied slot and a Green LED indicates a vacant slot. 
+4. To conceptually explain the integration of Artificial Intelligence — specifically computer 
+vision using cameras and Machine Learning models — for enhanced vehicle detection, 
+licence plate recognition, and automated access control. 
+5. To develop a system architecture diagram illustrating the three functional layers: Sensing 
+Layer, Processing Layer, and Output Layer, and explain the data flow between them. 
+6. To evaluate and document the advantages, limitations, and future scope of the proposed 
+smart parking system in the context of highway engineering and urban mobility. 
+7. To produce a project report of academic standard, suitable for college viva evaluation and 
+group presentation. 
+Project Scope Summary 
+Physical model  +  Working electronics  +  AI conceptual design  +  Academic documentation 
+3 | Page 
+Smart Parking System  |  Highway Engineering Project                                                      
+4 | Page 
+ 
+3. System Components 
+ 
+ 
+3.1  Hardware Components 
+ 
+Component Description / Role in System 
+Arduino Uno R3 Microcontroller board (ATmega328P). Acts as the brain of the system. 
+Reads sensor data and controls LED outputs. 
+HC-SR04 Ultrasonic 
+Sensor 
+Measures distance using sound waves. Detects whether a vehicle is 
+present in a parking slot. Range: 2 cm to 400 cm. 
+Red LED (5mm) Visual indicator for OCCUPIED slot status. Controlled directly by 
+Arduino digital output pin. 
+Green LED (5mm) Visual indicator for EMPTY slot status. Turns ON when no vehicle is 
+detected in the slot. 
+220 Ohm Resistors Current-limiting resistors placed in series with each LED to prevent 
+damage (one per LED). 
+Breadboard (830-point) Solderless prototyping board for assembling the circuit without 
+permanent connections. 
+Jumper Wires (M-M, M
+F) 
+Dupont wires connecting Arduino pins to breadboard, sensors, and 
+LEDs. 
+USB Type-B Cable Used to upload code from a laptop to the Arduino Uno and to supply 
+5V operating power. 
+ 
+3.2  Physical Model Components 
+ 
+Model Element Material Used / Description 
+Base Floor Slab A1-size 5mm Sunboard (Thermocol) representing the ground-floor 
+parking surface at 1:50 scale. 
+Perimeter Walls 3mm corrugated cardboard strips forming the outer structural 
+boundary of the parking structure. 
+Slot Divider Walls Cardboard strips between each bay defining individual parking slots 
+(P1 through P8). 
+Structural Columns Wooden dowels or bundled ice cream sticks representing RC columns 
+supporting the upper slab. 
+Smart Parking System  |  Highway Engineering Project                                                      
+Ramp 
+Upper Slab (Optional) 
+Inclined thick cardboard at approximately 1:7 gradient connecting 
+ground floor to upper level. 
+Sunboard sheet resting on columns representing the deck of the 
+upper parking level. 
+Slot Bay Markings 
+Entry / Exit Gates 
+Yellow chart paper strips simulating painted parking bay boundary 
+lines on the floor. 
+Cardboard gate posts with wooden skewer boom arms representing 
+entry and exit control barriers. 
+Toy Cars (Props) 
+Small plastic cars placed in slots to visually represent occupied bays 
+during demonstration. 
+5 | Page 
+Smart Parking System  |  Highway Engineering Project                                                      
+4. Working Principle 
+4.1  Ultrasonic Sensor — How It Works 
+The HC-SR04 Ultrasonic Sensor operates on the principle of sound wave reflection. It consists of 
+two components: a Transmitter and a Receiver. 
+Ultrasonic Detection Principle 
+Step 1:  Arduino sends a HIGH pulse (10 microseconds) to the Trigger (Trig) pin. 
+Step 2:  The sensor emits 8 ultrasonic pulses at 40 kHz frequency. 
+Step 3:  Sound waves travel forward and bounce back when they hit an object (the vehicle). 
+Step 4:  The Echo pin receives the reflected wave and sends a pulse proportional to travel time. 
+Step 5:  Arduino calculates distance using:  Distance = (Duration x Speed of Sound) / 2 
+4.2  System Decision Logic 
+The Arduino continuously reads the distance value from the sensor. Based on a pre-defined 
+threshold (typically 15 cm), it makes the following decision: 
+Condition 
+LED Output 
+Distance < 15 cm 
+Red LED ON  (Occupied) 
+Distance >= 15 cm 
+Green LED ON  (Empty) 
+Sensor disconnected 
+Both LEDs OFF (Error) 
+4.3  System Architecture — Three-Layer Model 
+The Smart Parking System functions across three distinct layers, each with a specific role: 
+SENSING 
+LAYER 
+HC-SR04 Ultrasonic Sensors (one per smart slot) 
+Force Sensitive Resistor (FSR 402) for secondary validation 
+IR Sensor at entry/exit gate (optional) 
+Camera Module (conceptual — for AI integration) 
+6 | Page 
+Smart Parking System  |  Highway Engineering Project                                                      
+Data flows upward  ▼ 
+PROCESSING 
+LAYER 
+Arduino Uno — reads sensor values and executes decision logic 
+Threshold comparison (distance < 15 cm = occupied) 
+AI/ML model (conceptual) — processes camera images for vehicle detection 
+Central parking management software (future scope) 
+Commands flow downward  ▼ 
+OUTPUT 
+LAYER 
+Red LED indicator — Slot Occupied 
+Green LED indicator — Slot Available 
+LCD Display (optional) — Shows total slots available 
+Mobile App / Web Dashboard (future scope) 
+Boom Barrier / Entry Gate Control (future scope) 
+7 | Page 
+Smart Parking System  |  Highway Engineering Project                                                      
+8 | Page 
+ 
+5. Arduino Code Explanation 
+ 
+ 
+The following code controls a single smart parking slot using one HC-SR04 ultrasonic sensor and 
+two LEDs (Red and Green). The code is written for the Arduino IDE and uploaded to the Arduino 
+Uno board. 
+ 
+5.1  Complete Arduino Code 
+ 
+// Smart Parking System — Single Slot 
+// Arduino Uno + HC-SR04 + Red/Green LED 
+ 
+// Pin Definitions 
+#define TRIG_PIN   9    // Trigger pin of HC-SR04 
+#define ECHO_PIN   10   // Echo pin of HC-SR04 
+#define RED_LED    7    // Red LED — Occupied 
+#define GREEN_LED  6    // Green LED — Empty 
+ 
+// Threshold distance in centimetres 
+#define THRESHOLD  15 
+ 
+void setup() { 
+  pinMode(TRIG_PIN, OUTPUT);    // Trig is output from Arduino 
+  pinMode(ECHO_PIN, INPUT);     // Echo is input to Arduino 
+  pinMode(RED_LED, OUTPUT);     // Red LED — output 
+  pinMode(GREEN_LED, OUTPUT);   // Green LED — output 
+  Serial.begin(9600);           // Start serial monitor 
+} 
+ 
+void loop() { 
+  long duration; 
+  float distance; 
+ 
+  // Step 1: Send trigger pulse 
+  digitalWrite(TRIG_PIN, LOW); 
+  delayMicroseconds(2); 
+  digitalWrite(TRIG_PIN, HIGH); 
+  delayMicroseconds(10);         // 10 microsecond pulse 
+  digitalWrite(TRIG_PIN, LOW); 
+ 
+  // Step 2: Measure echo return time 
+  duration = pulseIn(ECHO_PIN, HIGH); 
+ 
+Smart Parking System  |  Highway Engineering Project                                                      
+9 | Page 
+ 
+  // Step 3: Calculate distance 
+  // Speed of sound = 343 m/s = 0.0343 cm/us 
+  // Divide by 2 (to and back) 
+  distance = duration * 0.0343 / 2; 
+ 
+  // Step 4: Decision logic 
+  if (distance < THRESHOLD && distance > 0) { 
+    digitalWrite(RED_LED,   HIGH);  // Slot OCCUPIED 
+    digitalWrite(GREEN_LED, LOW); 
+    Serial.println("Status: OCCUPIED"); 
+  } else { 
+    digitalWrite(RED_LED,   LOW);   // Slot EMPTY 
+    digitalWrite(GREEN_LED, HIGH); 
+    Serial.println("Status: EMPTY"); 
+  } 
+ 
+  delay(500);  // Check every 500 milliseconds 
+} 
+ 
+5.2  Line-by-Line Explanation 
+ 
+Code Section What It Does 
+#define TRIG_PIN 9 Assigns a name to the Arduino pin number. Makes code readable. 
+#define THRESHOLD 15 Sets the detection threshold at 15 cm. Adjust based on sensor 
+height. 
+void setup() Runs once when Arduino powers on. Sets pin directions 
+(Input/Output). 
+void loop() Runs repeatedly in a loop. This is where sensing and decisions 
+happen. 
+digitalWrite(TRIG, HIGH) Sends a 10-microsecond pulse to activate the ultrasonic sensor. 
+pulseIn(ECHO_PIN, HIGH) Measures the time (in microseconds) for echo to return. 
+distance = duration * 0.0343 
+/ 2 Converts time to distance using speed of sound formula. 
+if (distance < THRESHOLD) If object is within 15 cm, a vehicle is present — turn Red LED ON. 
+else If no vehicle detected (distance >= 15 cm) — turn Green LED ON. 
+delay(500) Wait 500 ms before next reading. Prevents sensor false readings. 
+ 
+Smart Parking System  |  Highway Engineering Project                                                      
+Viva Tip — Key Formula 
+Distance (cm) = Duration (microseconds) x 0.0343 / 2 
+The factor 0.0343 is the speed of sound (343 m/s) in cm/microsecond. Division by 2 accounts for 
+the round trip (signal goes to object and returns back). 
+10 | P age 
+Smart Parking System  |  Highway Engineering Project                                                      
+6. Physical Model Description 
+The physical model is a scaled representation of a real-world ground-floor smart parking facility. It 
+is constructed at a 1:50 scale, meaning 1 cm on the model represents 50 cm in the actual structure. 
+The model serves as a visual aid for understanding the spatial layout, traffic flow, and structural 
+elements of a modern parking system. 
+6.1  Layout Description 
+• Eight parking slots (P1 to P8) are arranged in two rows of four — four on the left side and 
+four on the right side of a central driving aisle. 
+• The central driving aisle runs along the longitudinal axis of the model, with one-way 
+directional flow: vehicles enter from the front and exit from the rear (or vice versa, 
+depending on layout configuration). 
+• A ramp at the rear-centre of the model represents access to an upper parking deck. The 
+ramp is designed at approximately 1:7 gradient (approximately 8 degrees), which is within 
+standard vehicular ramp design limits. 
+• Structural columns are positioned at the intersection of each slot divider and the aisle 
+boundary walls, simulating reinforced concrete columns that support the upper slab. 
+• Entry and exit gates with boom barrier arms are placed at the front of the model, 
+separating the entry lane (left) from the exit lane (right). 
+• An optional upper floor slab rests on the columns, demonstrating the concept of a multi
+storey parking structure. 
+6.2  What Each Element Represents 
+Model Element 
+Real-World Equivalent 
+Sunboard Base 
+Ground floor concrete slab of parking structure 
+Cardboard Walls 
+Masonry or RCC perimeter boundary walls 
+Wooden Dowel Columns 
+Reinforced concrete (RCC) structural columns 
+Yellow Strip Lines 
+Painted bay markings on parking floor surface 
+Ramp 
+Vehicle access ramp to upper parking level 
+Gate with Boom Arm 
+Entry/exit boom barrier with access control system 
+11 | P age 
+Smart Parking System  |  Highway Engineering Project                                                      
+Toy Cars in Slots 
+Upper Slab (Optional) 
+Parked vehicles occupying bays during operation 
+Deck / rooftop of ground floor forming upper level floor 
+LED near each slot 
+Digital occupancy indicator panel (Red = Occupied, Green = Free) 
+12 | P age 
+Smart Parking System  |  Highway Engineering Project                                                      
+7. AI Integration — Conceptual Explanation 
+While our prototype uses ultrasonic sensors for vehicle detection, a fully advanced smart parking 
+system integrates Artificial Intelligence (AI) to further automate and enhance parking management. 
+This section conceptually explains how AI, particularly Computer Vision and Machine Learning, can 
+be incorporated into such a system. 
+7.1  What is AI in the Context of Parking? 
+Artificial Intelligence refers to the capability of machines to simulate human intelligence — 
+particularly the ability to see, understand, and make decisions. In a smart parking context, AI 
+replaces or supplements physical sensors by using cameras and image recognition algorithms to 
+detect vehicles, recognise number plates, and manage access control. 
+7.2  Computer Vision — The Core AI Component 
+Computer Vision is the branch of AI that enables machines to interpret visual information from the 
+real world. A camera installed above each parking slot captures images continuously. These images 
+are fed into a Machine Learning model trained to distinguish between an empty parking slot and an 
+occupied one. 
+How Computer Vision Works in a Parking System 
+1.  Camera captures a real-time image of the parking slot at regular intervals. 
+2.  Image is sent to an AI processor (e.g., Raspberry Pi, cloud server). 
+3.  A pre-trained ML model (CNN — Convolutional Neural Network) analyses the image. 
+4.  Model classifies the slot as OCCUPIED or EMPTY based on learned visual patterns. 
+5.  Result is communicated to the display system and management database in real time. 
+7.3  Licence Plate Recognition (LPR) 
+A key AI application in smart parking is Automatic Number Plate Recognition (ANPR), also called 
+Licence Plate Recognition (LPR). A camera at the entry gate captures the vehicle's number plate. 
+An Optical Character Recognition (OCR) algorithm reads the plate number. The system checks the 
+number against a database to identify registered vehicles, grant or deny access, and log entry/exit 
+timestamps automatically. 
+13 | P age 
+Smart Parking System  |  Highway Engineering Project                                                      
+14 | Page 
+ 
+ 
+7.4  AI vs. Sensor-Based Comparison 
+ 
+Feature Ultrasonic Sensor (Our System) AI Camera System (Conceptual) 
+Detection Method Distance measurement Image recognition 
+Cost Very low (Rs. 40-80) Moderate to high 
+Accuracy High for simple detection Very high (with good training) 
+Vehicle Info Not captured Number plate, vehicle type 
+Works in darkness Yes (sound-based) Requires IR camera 
+Scalability Limited (one sensor per slot) One camera covers multiple slots 
+Implementation 
+Complexity Beginner-friendly Advanced — requires ML knowledge 
+ 
+7.5  AI Architecture for a Full Smart Parking System 
+ 
+A comprehensive AI-integrated smart parking system would follow this pipeline: 
+ 
+Stage Description 
+Data Collection Cameras installed above each slot and at entry/exit gates continuously 
+capture images. 
+Pre-processing Images are resized, enhanced, and prepared for analysis (noise removal, 
+contrast adjustment). 
+AI Detection A CNN model (e.g., YOLO or MobileNet) identifies vehicles and classifies 
+slot status. 
+Decision Making System determines which slots are free and communicates this to drivers 
+via display boards. 
+Database Update Entry/exit logs, slot availability, and revenue data are updated in real time. 
+User Interface Drivers see available slots on LED boards, mobile apps, or web 
+dashboards before entering. 
+  
+Smart Parking System  |  Highway Engineering Project                                                      
+15 | Page 
+ 
+8. Advantages of the System 
+ 
+ 
+The Smart Parking System — both in its prototype and conceptual AI form — offers significant 
+benefits over conventional manual parking management: 
+ 
+Advantage Explanation 
+Real-Time Slot 
+Detection 
+Ultrasonic sensors provide instant vehicle presence data without any 
+human involvement, ensuring accuracy at all times. 
+Reduced Traffic 
+Congestion 
+Drivers are guided directly to available slots, eliminating the need to 
+circle the parking area and reducing aisle congestion. 
+Energy Efficiency LEDs consume far less power than fluorescent or incandescent 
+signboards. The system runs on 5V from a USB source. 
+Scalability The system can be easily expanded — additional sensors and LEDs 
+can be added to cover more slots with the same Arduino. 
+Low Cost of 
+Implementation 
+The entire working prototype can be built for under Rs. 1,000, making 
+it viable for small and medium-scale parking facilities. 
+No Manual Monitoring Automation eliminates the need for parking attendants to manually 
+check and direct vehicles to available spaces. 
+Data Collection With an LCD or connected computer, the system can log occupancy 
+patterns over time, helping operators plan for peak demand. 
+AI Upgrade Potential The system architecture is designed to accept AI/camera modules in 
+the future, allowing a gradual and cost-effective upgrade path. 
+Safety Proper lane management with dedicated entry and exit gates reduces 
+the risk of accidents within the parking facility. 
+Improved User 
+Experience 
+Drivers can find parking faster, reducing frustration and improving 
+overall customer satisfaction at the facility. 
+  
+Smart Parking System  |  Highway Engineering Project                                                      
+9. Limitations of the System 
+While the prototype effectively demonstrates the concept of a smart parking system, several 
+limitations exist in both the current hardware implementation and the conceptual AI design: 
+9.1  Hardware / Prototype Limitations 
+• The current prototype implements only two smart slots. Scaling to eight or more slots 
+requires additional sensors and careful management of Arduino pin allocations. 
+• Ultrasonic sensors can produce false readings under certain conditions, such as highly 
+angled vehicle surfaces, sensor misalignment, or environmental interference. 
+• The prototype lacks wireless communication. In a real system, sensor data would need to 
+be transmitted over WiFi or GSM to a central server or mobile application. 
+• There is no persistent data storage (memory) in the current setup. Occupancy history is 
+not recorded once the system is powered off. 
+• The physical model is constructed from cardboard and Sunboard at 1:50 scale and is not 
+structurally analogous to a real reinforced concrete parking structure. 
+9.2  AI Integration Limitations 
+• Computer vision systems require well-trained ML models. Training requires large datasets 
+of parking lot images under various lighting and weather conditions. 
+• AI cameras and computing hardware (e.g., Raspberry Pi with camera module, or cloud 
+infrastructure) significantly increase system cost compared to a sensor-only setup. 
+• In poor lighting, fog, or rain, camera-based systems may produce inaccurate results 
+unless infrared cameras are deployed. 
+• Privacy concerns arise when cameras are installed in public or semi-public parking areas, 
+especially if they capture persons alongside vehicle data. 
+• Power failure or network disconnection can bring the entire AI-dependent system to a halt 
+unless robust backup mechanisms are in place. 
+9.3  Summary Table 
+16 | P age 
+Smart Parking System  |  Highway Engineering Project                                                      
+10. Conclusion 
+The rapid growth of urban vehicular traffic has rendered traditional parking infrastructure inadequate 
+and inefficient. The Smart Parking System presented in this project demonstrates a practical, cost
+effective, and scalable approach to addressing the chronic problem of parking space management 
+in modern cities. 
+The working prototype, built on an Arduino Uno platform with HC-SR04 ultrasonic sensors and LED 
+indicators, successfully validates the core principle of automated vehicle detection and real-time 
+slot status indication. The system accurately distinguishes between occupied and vacant parking 
+slots using distance threshold logic, and communicates occupancy status through colour-coded 
+LED outputs — red for occupied and green for empty — without the need for any manual 
+intervention. 
+The physical scale model at 1:50 ratio effectively represents the spatial layout of a ground-floor 
+parking facility, incorporating all essential elements of a real-world parking structure: parking bays, 
+driving aisle, entry and exit gates with boom barriers, structural columns, and a vehicular ramp. This 
+model serves as an important visual and educational tool for understanding both the engineering 
+design and the operational logic of the proposed system. 
+The conceptual integration of Artificial Intelligence — through computer vision and machine learning 
+— demonstrates the potential for significant advancement beyond the current prototype. A camera
+based AI system using Convolutional Neural Networks can detect vehicles with greater spatial 
+coverage, recognise licence plates for access control, and provide richer operational data for facility 
+management. This represents a natural and achievable evolution of the system as hardware costs 
+continue to decline and AI tools become more accessible. 
+From a highway engineering perspective, smart parking systems contribute directly to reducing 
+urban congestion, lowering carbon emissions, and improving the overall efficiency of road networks. 
+As the first and last mile of every vehicle journey begins and ends with parking, intelligent 
+management of parking resources is a critical component of sustainable urban mobility planning. 
+In conclusion, this project successfully achieves its stated objectives: the design and construction 
+of a physical model, the implementation of a working electronic prototype, and a thorough 
+conceptual analysis of AI integration potential. The system is simple enough to be understood and 
+reproduced at a student level, yet rich enough in its architecture and future scope to serve as a 
+credible entry point into the domain of intelligent transportation infrastructure. 
+17 | P age 
+Smart Parking System  |  Highway Engineering Project                                                      
+Future Scope 
+1.  Integration of ESP8266/ESP32 for real-time IoT-based monitoring via mobile application. 
+2.  Addition of LCD display showing live count of available vs. occupied slots. 
+3.  Camera-based AI for number plate recognition and automated billing system. 
+4.  Solar power integration to make the system fully self-sustaining. 
+5.  Multi-floor expansion with ramp sensor and centralised floor-wise slot management. 
+18 | P age 

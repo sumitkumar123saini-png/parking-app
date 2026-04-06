@@ -1,0 +1,3 @@
+# Optional: only for scripts/serial_bridge.py (laptop + USB Arduino)
+pyserial==3.5
+python-dotenv==1.1.1

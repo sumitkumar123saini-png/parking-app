@@ -1,2 +1,2 @@
 web: gunicorn app:app
-release: python -c "from app import db; db.create_all()"
+release: python release.py

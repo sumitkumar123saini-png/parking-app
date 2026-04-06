@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Edit Parking lot{% endblock %}
 {% block content %}
+{% include "admin/admin_nav.html" with context %}
 <div class="container my-5 my-container">
 <h1 class="display-6 my-display my-4">Edit Parking Lot #{{lot.lot_id}}</h1>
 <form class="row g-3" method="POST">
@@ -18,11 +19,19 @@
   </div>
   <div class="col-md-6">
     <label for="max_spots" class="form-label my-label">Maximum number of spots</label>
-    <input name = "max_spots" type="number" class="form-control my-input" id="max_spots" min="3" placeholder="3 and above" required value="{{lot.max_spots}}">
+    <input name = "max_spots" type="number" class="form-control my-input" id="max_spots" min="1" placeholder="1 and above" required value="{{lot.max_spots}}">
   </div>
   <div class="col-md-6">
     <label for="price" class="form-label my-label">Price per hour (₹)</label>
     <input name = "price" type="number" class="form-control my-input" id="price" min="0" required value="{{lot.price_per_hr}}">
+  </div>
+  <div class="col-md-6">
+    <label for="latitude" class="form-label my-label">Map latitude (optional)</label>
+    <input name="latitude" type="text" class="form-control my-input" id="latitude" value="{{ lot.latitude if lot.latitude is not none else '' }}" placeholder="e.g. 18.4963" inputmode="decimal">
+  </div>
+  <div class="col-md-6">
+    <label for="longitude" class="form-label my-label">Map longitude (optional)</label>
+    <input name="longitude" type="text" class="form-control my-input" id="longitude" value="{{ lot.longitude if lot.longitude is not none else '' }}" placeholder="e.g. 73.8518" inputmode="decimal">
   </div>
   <div class="col-12">
     <div class="form-check">

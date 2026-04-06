@@ -1,0 +1,381 @@
+
+app.py
+app.py
+app.py
+app.py
+book_spot.html
+All changes are pushed. Summary:
+
+What I fixed
+Restored authentication:
+
+Removed auto-login
+Users must register/login
+Admin login: admin@lotandfound.com / admin
+Removed guest user creation
+Added missing routes:
+
+/lot/<lot_id>/book — Book a parking spot
+/lot/<lot_id>/spot/<spot_id>/release — Release a spot and calculate payment
+/payment/<payment_id> — Process payment
+Fixed models:
+
+Added relationship between Lot and Spot models
+Fixed home route to load spots with lots
+Restored templates:
+
+Removed admin login links from navbar
+Restored original navigation
+How it works now
+Users: Register → Login → Browse lots → Book spots → Release spots → Make payments
+Admin: Login with admin@lotandfound.com / admin → View all users → Add/edit lots → View parking records → See stats
+Redeploy on Railway to apply the changes. The app should work as intended.
+
+Internal Server Error, getting this when from admin side i am creatign parkingHistory
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+web
+
+/
+
+8a0638ce
+
+Active
+
+
+
+Mar 13, 2026, 11:05 AM GMT+5:30
+
+web-production-7dd38.up.railway.app
+
+Details
+
+Build Logs
+
+Deploy Logs
+
+HTTP Logs
+
+Network Flow Logs
+
+Search HTTP logs e.g. @path:/api/users @httpStatus:200
+
+You reached the start of the range
+
+Mar 13, 2026, 11:05 AM
+
+GET
+
+/
+
+302
+
+346ms
+
+GET
+
+/logout
+
+302
+
+314ms
+
+GET
+
+/login
+
+200
+
+325ms
+
+GET
+
+/static/style.css
+
+200
+
+311ms
+
+POST
+
+/login
+
+302
+
+470ms
+
+GET
+
+/home
+
+302
+
+314ms
+
+GET
+
+/admin
+
+200
+
+330ms
+
+GET
+
+/static/style.css
+
+304
+
+312ms
+
+GET
+
+/admin
+
+302
+
+318ms
+
+GET
+
+/login
+
+200
+
+312ms
+
+GET
+
+/static/style.css
+
+200
+
+317ms
+
+GET
+
+/logout
+
+302
+
+311ms
+
+GET
+
+/login
+
+200
+
+312ms
+
+GET
+
+/static/style.css
+
+304
+
+311ms
+
+GET
+
+/static/images/favicon.png
+
+200
+
+469ms
+
+GET
+
+/sign-up
+
+200
+
+313ms
+
+GET
+
+/static/style.css
+
+304
+
+311ms
+
+POST
+
+/sign-up
+
+200
+
+312ms
+
+GET
+
+/static/style.css
+
+304
+
+313ms
+
+POST
+
+/sign-up
+
+302
+
+495ms
+
+GET
+
+/home
+
+200
+
+332ms
+
+GET
+
+/static/style.css
+
+304
+
+311ms
+
+GET
+
+/logout
+
+302
+
+315ms
+
+GET
+
+/login
+
+200
+
+311ms
+
+GET
+
+/static/style.css
+
+304
+
+318ms
+
+POST
+
+/login
+
+302
+
+506ms
+
+GET
+
+/home
+
+302
+
+313ms
+
+GET
+
+/admin
+
+200
+
+321ms
+
+GET
+
+/static/style.css
+
+304
+
+312ms
+
+GET
+
+/admin/lot/add-lot
+
+200
+
+317ms
+
+GET
+
+/static/style.css
+
+304
+
+310ms
+
+GET
+
+/admin/lot/static/images/favicon.png
+
+404
+
+311ms
+
+POST
+
+/admin/lot/add-lot
+
+302
+
+330ms
+
+GET
+
+/admin
+
+500
+
+330ms
+
+GET
+
+/favicon.ico
+
+404
+
+312ms
+
+You’re seeing a generic 500 on /admin right after POST /admin/lot/add-lot; I need the actual Python error stack from Railway to fix it exactly.
+
+What I need you to do
+On Railway:
+
+Open your project → web service.
+Go to Deploy Logs (or Logs → Deploy logs / Application logs).
+Scroll to the time just after POST /admin / POST /admin/lot/add-lot and look for a Python traceback (it will mention File "/app/app.py", line ... etc).
+Copy-paste that whole traceback here.
+Once I see the exact exception (e.g. an AttributeError, ValueError, etc.), I’ll patch the code so:
+
+Admin can add a lot (with slots, details),
+/admin loads without error,
+You can still see all users, reservations, and history as described in the README.

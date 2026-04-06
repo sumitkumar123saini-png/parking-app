@@ -3,6 +3,11 @@
 {% block content %}
 <div class="container my-5 my-container">
 <h1 class="display-6 my-display my-4">Parking Lot #{{lot.lot_id}}</h1>
+{% set map_lat = lot.latitude if lot.latitude is not none else 18.4963 %}
+{% set map_lng = lot.longitude if lot.longitude is not none else 73.8518 %}
+<p class="text-muted small mb-2">Location on map (pin shows lot; adjust lat/long in admin if needed)</p>
+<div id="lot-map" class="mb-4 rounded" style="height: 280px; min-height: 200px; border: 1px solid rgba(255,255,227,0.3);"></div>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <form class="row g-3">
   <div class="col-12">
     <label for="prime_loc" class="form-label my-label">Prime Location Name</label>
@@ -18,7 +23,7 @@
   </div>
   <div class="col-md-6">
     <label for="max_spots" class="form-label my-label">Maximum number of spots</label>
-    <input name = "max_spots" type="number" class="form-control my-input" id="max_spots" min="3" placeholder="3 and above" required value="{{lot.max_spots}}" readonly>
+    <input name = "max_spots" type="number" class="form-control my-input" id="max_spots" min="1" placeholder="Spots in this lot" required value="{{lot.max_spots}}" readonly>
   </div>
   <div class="col-md-6">
     <label for="price" class="form-label my-label">Price per hour (₹)</label>
@@ -37,8 +42,23 @@
     </div>
   </div>
   <div class="col-12">
-    <a href="{{url_for('home')}}" class="btn my-btn">Close</a>
+    <a href="{{ url_for('home') }}" class="btn my-btn">Close</a>
   </div>
 </form>
 </div>
+{% endblock %}
+{% block script %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+  (function () {
+    var lat = {{ map_lat }};
+    var lng = {{ map_lng }};
+    var map = L.map('lot-map').setView([lat, lng], 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+    L.marker([lat, lng]).addTo(map).bindPopup({{ lot.prime_loc|tojson }});
+  })();
+</script>
 {% endblock %}

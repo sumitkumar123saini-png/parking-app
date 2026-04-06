@@ -1,9 +1,11 @@
-from flask import Flask, render_template, redirect, url_for, request, flash, session
+from flask import Flask, render_template, redirect, url_for, request, flash, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from datetime import datetime
 from dotenv import load_dotenv
+from sqlalchemy import text
+from sqlalchemy.orm import joinedload
 import os
 
 # Load environment variables
@@ -12,8 +14,8 @@ load_dotenv()
 # Create Flask app
 app = Flask(__name__)
 
-# Configure app
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+# Configure app — SECRET_KEY must be set in production (Railway Variables)
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY') or 'dev-only-change-me-in-production'
 
 # Handle both local SQLite and production PostgreSQL
 database_url = os.getenv('DATABASE_URL')
@@ -49,6 +51,9 @@ class Lot(db.Model):
     price_per_hr = db.Column(db.Float, nullable=False)
     max_spots = db.Column(db.Integer, nullable=False)
     is_shaded = db.Column(db.Boolean, default=False)
+    # Map pin for campus demo (NICMAR / any lot) — optional
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
     spots = db.relationship('Spot', backref='lot', lazy=True, cascade='all, delete-orphan')
 
 class Spot(db.Model):
@@ -76,6 +81,30 @@ class Payment(db.Model):
     total_amt = db.Column(db.Float, nullable=False)
     payment_method = db.Column(db.String, nullable=True)
     transaction_date = db.Column(db.DateTime, nullable=True)
+
+
+def ensure_schema():
+    """Add columns introduced after first deploy (PostgreSQL + SQLite)."""
+    from sqlalchemy import inspect
+
+    insp = inspect(db.engine)
+    if 'lot' not in insp.get_table_names():
+        return
+    cols = {c['name'] for c in insp.get_columns('lot')}
+    dialect = db.engine.dialect.name
+    for name, sql_pg, sql_lite in (
+        ('latitude', 'ALTER TABLE lot ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION', 'ALTER TABLE lot ADD COLUMN latitude FLOAT'),
+        ('longitude', 'ALTER TABLE lot ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION', 'ALTER TABLE lot ADD COLUMN longitude FLOAT'),
+    ):
+        if name in cols:
+            continue
+        try:
+            stmt = text(sql_pg if dialect == 'postgresql' else sql_lite)
+            db.session.execute(stmt)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
 
 # Decorators
 def auth_required(func):
@@ -114,11 +143,7 @@ def home():
     if user.is_admin:
         return redirect(url_for('admin'))
     
-    lots = Lot.query.all()
-    # Load spots for each lot
-    for lot in lots:
-        lot.spots = Spot.query.filter_by(lot_id=lot.lot_id).all()
-    
+    lots = Lot.query.options(joinedload(Lot.spots)).order_by(Lot.lot_id).all()
     current = Reserve.query.filter_by(user_id=user.user_id, is_ongoing=True).all()
     # Fix the template reference - add r_id alias
     for record in current:
@@ -202,6 +227,8 @@ def logout():
 @auth_required
 def profile():
     user = User.query.get(session['user_id'])
+    if not user:
+        return redirect(url_for('logout'))
     if request.method == 'POST':
         name = request.form.get('name')
         cpass = request.form.get('cpassword')
@@ -232,7 +259,7 @@ def profile():
 @app.route('/admin')
 @admin_required
 def admin():
-    lots = Lot.query.all()
+    lots = Lot.query.options(joinedload(Lot.spots)).order_by(Lot.lot_id).all()
     return render_template("admin/admin_dashboard.html", lots=lots)
 
 @app.route('/admin/users')
@@ -267,14 +294,38 @@ def add_lot():
         is_shaded = 'is_shaded' in request.form
 
         if prime_loc and address and pin and max_spots and price:
+            try:
+                ms = int(max_spots)
+                pr = float(price)
+            except (TypeError, ValueError):
+                flash("Invalid number of spots or price", "warning")
+                return render_template("admin/new_lot.html")
+            if ms < 1:
+                flash("Need at least 1 parking spot", "warning")
+                return render_template("admin/new_lot.html")
+            lat = request.form.get('latitude') or None
+            lng = request.form.get('longitude') or None
+            try:
+                lat_f = float(lat) if lat not in (None, '') else None
+                lng_f = float(lng) if lng not in (None, '') else None
+            except (TypeError, ValueError):
+                flash("Latitude/longitude must be valid numbers or left empty", "warning")
+                return render_template("admin/new_lot.html")
+
             if is_shaded:
-                new_lot = Lot(prime_loc=prime_loc, address=address, pincode=pin, max_spots=max_spots, price_per_hr=price, is_shaded=True)
+                new_lot = Lot(
+                    prime_loc=prime_loc, address=address, pincode=pin, max_spots=ms, price_per_hr=pr,
+                    is_shaded=True, latitude=lat_f, longitude=lng_f,
+                )
             else:
-                new_lot = Lot(prime_loc=prime_loc, address=address, pincode=pin, max_spots=max_spots, price_per_hr=price)
+                new_lot = Lot(
+                    prime_loc=prime_loc, address=address, pincode=pin, max_spots=ms, price_per_hr=pr,
+                    latitude=lat_f, longitude=lng_f,
+                )
             db.session.add(new_lot)
             db.session.flush()
 
-            for i in range(int(max_spots)):
+            for _i in range(ms):
                 new_spot = Spot(lot_id=new_lot.lot_id)
                 db.session.add(new_spot)
 
@@ -292,9 +343,9 @@ def view_lot(lot_id):
     lot = Lot.query.get(lot_id)
     if lot:
         return render_template("view_lot.html", lot=lot)
-    else:
-        flash("Lot not found", "error")
-        return redirect(url_for('admin'))
+    flash("Lot not found", "error")
+    user = User.query.get(session.get('user_id'))
+    return redirect(url_for('admin') if user and user.is_admin else url_for('home'))
 
 @app.route('/admin/lot/<int:lot_id>/edit-lot', methods=['GET', 'POST'])
 @admin_required
@@ -310,24 +361,48 @@ def edit_lot(lot_id):
             is_shaded = 'is_shaded' in request.form
 
             if prime_loc and address and pin and max_spots and price:
+                try:
+                    ms = int(max_spots)
+                    pr = float(price)
+                except (TypeError, ValueError):
+                    flash("Invalid number of spots or price", "warning")
+                    return render_template("admin/edit_lot.html", lot=lot)
+                if ms < 1:
+                    flash("Need at least 1 parking spot", "warning")
+                    return render_template("admin/edit_lot.html", lot=lot)
+                lat = request.form.get('latitude') or None
+                lng = request.form.get('longitude') or None
+                try:
+                    lot.latitude = float(lat) if lat not in (None, '') else None
+                    lot.longitude = float(lng) if lng not in (None, '') else None
+                except (TypeError, ValueError):
+                    flash("Latitude/longitude must be valid numbers or left empty", "warning")
+                    return render_template("admin/edit_lot.html", lot=lot)
+
                 lot.prime_loc = prime_loc
                 lot.address = address
                 lot.pincode = pin
-                lot.max_spots = max_spots
-                lot.price_per_hr = price
+                lot.max_spots = ms
+                lot.price_per_hr = pr
                 lot.is_shaded = is_shaded
-                
-                # Handle spot count changes
-                spots_before = Spot.query.filter_by(lot_id=lot_id).all()
+
+                spots_before = Spot.query.filter_by(lot_id=lot_id).order_by(Spot.spot_id).all()
                 max_before = len(spots_before)
-                if int(max_spots) > max_before:
-                    for i in range(int(max_spots) - max_before):
-                        new_spot = Spot(lot_id=lot_id)
-                        db.session.add(new_spot)
-                elif int(max_spots) < max_before:
-                    for spot in spots_before[int(max_spots):]:
+                if ms > max_before:
+                    for _ in range(ms - max_before):
+                        db.session.add(Spot(lot_id=lot_id))
+                elif ms < max_before:
+                    to_remove = spots_before[ms:]
+                    for spot in to_remove:
+                        if Reserve.query.filter_by(spot_id=spot.spot_id).first():
+                            db.session.rollback()
+                            flash(
+                                "Cannot reduce spots: remove or complete reservations tied to higher spot IDs first.",
+                                "error",
+                            )
+                            return render_template("admin/edit_lot.html", lot=lot)
                         db.session.delete(spot)
-                
+
                 db.session.commit()
                 flash("Parking lot details updated successfully!", "success")
                 return redirect(url_for("admin"))
@@ -344,11 +419,10 @@ def edit_lot(lot_id):
 def delete_lot(lot_id):
     lot = Lot.query.get(lot_id)
     if lot:
-        reservation = Reserve.query.filter_by(lot_id=lot_id, is_ongoing=True).first()
-        if reservation:
-            flash("Cannot delete a lot that has been occupied", "error")
+        if Reserve.query.filter_by(lot_id=lot_id).first():
+            flash("Cannot delete a lot that has reservation history (past or active bookings).", "error")
             return redirect(url_for('admin'))
-        
+
         db.session.delete(lot)
         db.session.commit()
         flash("Lot #" + str(lot_id) + " deleted successfully!", "success")
@@ -548,9 +622,62 @@ def payment(payment_id):
     return render_template("user/payment.html", payment=payment_record, reservation=reservation)
 
 
+def _occupancy_api_authorized():
+    token = os.getenv('OCCUPANCY_API_TOKEN', 'demo-nicmar-2026')
+    return request.headers.get('X-Api-Token') == token
+
+
+def _json_bool(value):
+    """Parse JSON/body 'occupied' without treating string 'false' as truthy."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+    if isinstance(value, str):
+        return value.strip().lower() in ('1', 'true', 'yes', 'on')
+    return bool(value)
+
+
+@app.route('/api/spot/<int:spot_id>', methods=['GET'])
+def api_spot_get(spot_id):
+    """Read slot status (for apps / Arduino bridge)."""
+    spot = db.session.get(Spot, spot_id)
+    if not spot:
+        return jsonify({'ok': False, 'error': 'not found'}), 404
+    return jsonify({
+        'ok': True,
+        'spot_id': spot.spot_id,
+        'lot_id': spot.lot_id,
+        'status': spot.status,
+        'occupied': spot.status == 'o',
+    })
+
+
+@app.route('/api/spot/<int:spot_id>/status', methods=['POST'])
+def api_spot_set_status(spot_id):
+    """Push sensor occupancy (Arduino / ESP). Header: X-Api-Token — set OCCUPANCY_API_TOKEN on Railway."""
+    if not _occupancy_api_authorized():
+        return jsonify({'ok': False, 'error': 'Unauthorized'}), 401
+    payload = request.get_json(silent=True) or {}
+    occupied = _json_bool(payload.get('occupied'))
+    if occupied is None:
+        return jsonify({'ok': False, 'error': 'missing occupied (boolean)'}), 400
+    spot = db.session.get(Spot, spot_id)
+    if not spot:
+        return jsonify({'ok': False, 'error': 'not found'}), 404
+    if Reserve.query.filter_by(spot_id=spot_id, is_ongoing=True).first():
+        return jsonify({'ok': False, 'error': 'spot has active booking'}), 409
+    spot.status = 'o' if occupied else 'a'
+    db.session.commit()
+    return jsonify({'ok': True, 'spot_id': spot.spot_id, 'lot_id': spot.lot_id, 'status': spot.status})
+
+
 # Initialize database
 with app.app_context():
     db.create_all()
+    ensure_schema()
     # Create admin user if doesn't exist
     admin = User.query.filter_by(is_admin=True).first()
     if not admin:

@@ -1,5 +1,6 @@
 venv
 .env
+bridge.env
 __pycache__
 instance
 instance\db.sqlite3

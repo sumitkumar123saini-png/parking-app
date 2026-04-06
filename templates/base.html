@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css">
     <title>{% block title %}{% endblock %}</title>
-    <link rel="icon" type="image/x-icon" href="static/images/favicon.png">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
 </head>
 <body>
     <nav class="navv navbar navbar-expand-lg pt-3 pb-2 px-4 justify-content-between">
